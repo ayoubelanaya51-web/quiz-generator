@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Generator AI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body { background: linear-gradient(135deg, #f0f4ff 0%, #f7f8fa 100%); min-height: 100vh; padding: 20px 12px; color: #1a1a1a; }
+  .container { max-width: 850px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 25px; }
+  .header h1 { font-size: 24px; color: #1e40af; margin-bottom: 8px; }
+  .header p { color: #666; font-size: 14px; }
+  .input-section { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 2px solid #f3f4f6; }
+  .tab { padding: 10px 16px; background: none; border: none; cursor: pointer; font-size: 14px; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+  textarea { width: 100%; min-height: 150px; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 14px; resize: vertical; font-family: inherit; }
+  textarea:focus { outline: none; border-color: #3b82f6; }
+  .file-upload { border: 2px dashed #d1d5db; border-radius: 10px; padding: 30px 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .file-upload:hover { border-color: #3b82f6; background: #f0f7ff; }
+  .file-upload input { display: none; }
+  .file-upload .icon { font-size: 36px; margin-bottom: 8px; }
+  .file-upload p { color: #6b7280; font-size: 14px; }
+  .file-name { color: #2563eb; font-weight: 600; margin-top: 8px; font-size: 13px; word-break: break-all; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+  .option-group label { display: block; font-size: 13px; color: #4b5563; margin-bottom: 6px; font-weight: 500; }
+  .option-group select, .option-group input { width: 100%; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px; background: white; }
+  
+  /* Difficulty Selector */
+  .difficulty-section { margin: 18px 0; }
+  .difficulty-section label { display: block; font-size: 13px; color: #4b5563; margin-bottom: 8px; font-weight: 500; }
+  .difficulty-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .difficulty-btn { padding: 12px 8px; border: 1.5px solid #e5e7eb; background: white; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 13px; text-align: center; font-weight: 500; }
+  .difficulty-btn:hover { border-color: #3b82f6; background: #f0f7ff; }
+  .difficulty-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+  .difficulty-btn .emoji { display: block; font-size: 20px; margin-bottom: 4px; }
+  
+  .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+  .generate-btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .loader { display: none; text-align: center; padding: 30px; }
+  .loader.show { display: block; }
+  .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; margin: 0 auto 15px; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-container { background: #e5e7eb; height: 6px; border-radius: 10px; overflow: hidden; margin-bottom: 20px; display: none; }
+  .progress-container.show { display: block; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); width: 0%; transition: width 0.4s ease; }
+  .question-card { background: white; border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #ececec; display: flex; gap: 12px; align-items: flex-start; }
+  .question-number { color: #999; font-size: 14px; font-weight: 500; min-width: 22px; }
+  .question-content { flex: 1; min-width: 0; }
+  .question-text { font-size: 15px; color: #1f2937; margin-bottom: 14px; line-height: 1.5; }
+  .buttons { display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 10px 12px; border: 1.5px solid #e5e7eb; background: white; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; color: #4b5563; font-weight: 500; }
+  .btn:hover:not(:disabled) { border-color: #3b82f6; background: #f0f7ff; }
+  .btn.selected { background: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+  .btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
+  .btn.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+  .btn:disabled { cursor: not-allowed; }
+  .explanation { margin-top: 12px; padding: 12px 14px; background: #f9fafb; border-left: 3px solid #3b82f6; border-radius: 6px; font-size: 13px; color: #374151; line-height: 1.6; display: none; }
+  .explanation.show { display: block; }
+  .submit-btn { width: 100%; margin-top: 18px; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; display: none; }
+  .submit-btn.show { display: block; }
+  .submit-btn:hover { background: #1d4ed8; }
+  .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+  .score-card { background: white; border-radius: 14px; padding: 22px; text-align: center; margin-top: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: none; }
+  .score-card.show { display: block; }
+  .score-card h2 { color: #1f2937; margin-bottom: 10px; font-size: 18px; }
+  .score-number { font-size: 32px; font-weight: bold; color: #2563eb; margin: 10px 0; }
+  .error { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; font-size: 13px; }
+  .error.show { display: block; }
+  
+  /* Mobile Responsive */
+  @media (max-width: 600px) {
+    body { padding: 12px 8px; }
+    .header h1 { font-size: 20px; }
+    .header p { font-size: 13px; }
+    .input-section { padding: 16px; border-radius: 12px; }
+    .options { grid-template-columns: 1fr; }
+    .question-card { padding: 14px; gap: 8px; }
+    .question-text { font-size: 14px; }
+    .btn { padding: 10px 8px; font-size: 13px; }
+    .file-upload { padding: 25px 10px; }
+    .difficulty-btn { padding: 10px 6px; font-size: 12px; }
+    .difficulty-btn .emoji { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🤖 Quiz Generator AI</h1>
+    <p>ولّد كويز Vrai/Faux أوتوماتيكياً من أي نص أو ملف PDF</p>
+  </div>
+  <div class="input-section" id="inputSection">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(event, 'text')">📝 نص</button>
+      <button class="tab" onclick="switchTab(event, 'pdf')">📄 PDF</button>
+    </div>
+    <div id="textTab">
+      <textarea id="textInput" placeholder="الصق هنا الدرس أو النص اللي بغيتي تخرج منو الأسئلة..."></textarea>
+    </div>
+    <div id="pdfTab" style="display:none;">
+      <label class="file-upload" for="pdfInput">
+        <div class="icon">📎</div>
+        <p>اضغط هنا لرفع ملف PDF</p>
+        <div class="file-name" id="fileName"></div>
+        <input type="file" id="pdfInput" accept=".pdf" onchange="showFileName()">
+      </label>
+    </div>
+    
+    <div class="difficulty-section">
+      <label>🎯 مستوى الصعوبة</label>
+      <div class="difficulty-grid">
+        <button class="difficulty-btn" data-diff="easy" onclick="selectDifficulty(this, 'easy')">
+          <span class="emoji">😊</span>سهل
+        </button>
+        <button class="difficulty-btn active" data-diff="medium" onclick="selectDifficulty(this, 'medium')">
+          <span class="emoji">🤔</span>متوسط
+        </button>
+        <button class="difficulty-btn" data-diff="hard" onclick="selectDifficulty(this, 'hard')">
+          <span class="emoji">🔥</span>صعب
+        </button>
+        <button class="difficulty-btn" data-diff="tricky" onclick="selectDifficulty(this, 'tricky')">
+          <span class="emoji">😈</span>مفخخة
+        </button>
+      </div>
+    </div>
+    
+    <div class="options">
+      <div class="option-group">
+        <label>عدد الأسئلة</label>
+        <input type="number" id="numQuestions" value="5" min="1" max="30">
+      </div>
+      <div class="option-group">
+        <label>اللغة</label>
+        <select id="language">
+          <option value="fr">Français</option>
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </div>
+    <button class="generate-btn" id="generateBtn" onclick="generateQuiz()">✨ توليد الكويز</button>
+    <div class="error" id="errorMsg"></div>
+  </div>
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>الذكاء الاصطناعي كيقرا النص ويصاوب الأسئلة... 🧠</p>
+  </div>
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div id="quizContainer"></div>
+  <button class="submit-btn" id="submitBtn" onclick="checkAnswers()">تحقق من النتائج</button>
+  <div class="score-card" id="scoreCard">
+    <h2>نتيجتك</h2>
+    <div class="score-number" id="scoreText">0 / 0</div>
+    <p id="scoreMessage"></p>
+  </div>
+</div>
+<script>
+let currentTab = 'text';
+let currentDifficulty = 'medium';
+let questions = [];
+const userAnswers = {};
+
+function switchTab(e, tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('textTab').style.display = tab === 'text' ? 'block' : 'none';
+  document.getElementById('pdfTab').style.display = tab === 'pdf' ? 'block' : 'none';
+}
+
+function selectDifficulty(btn, diff) {
+  currentDifficulty = diff;
+  document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function showFileName() {
+  const file = document.getElementById('pdfInput').files[0];
+  if (file) document.getElementById('fileName').textContent = '📄 ' + file.name;
+}
+
+function showError(msg) {
+  const err = document.getElementById('errorMsg');
+  err.textContent = '⚠️ ' + msg;
+  err.classList.add('show');
+  setTimeout(() => err.classList.remove('show'), 5000);
+}
+
+async function generateQuiz() {
+  const numQuestions = parseInt(document.getElementById('numQuestions').value);
+  const language = document.getElementById('language').value;
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('loader').classList.add('show');
+  document.getElementById('quizContainer').innerHTML = '';
+  document.getElementById('submitBtn').classList.remove('show');
+  document.getElementById('scoreCard').classList.remove('show');
+  document.getElementById('progressContainer').classList.remove('show');
+  
+  try {
+    let response;
+    if (currentTab === 'pdf') {
+      const file = document.getElementById('pdfInput').files[0];
+      if (!file) { showError('المرجو اختيار ملف PDF'); return; }
+      const formData = new FormData();
+      formData.append('pdf', file);
+      formData.append('num_questions', numQuestions);
+      formData.append('language', language);
+      formData.append('difficulty', currentDifficulty);
+      response = await fetch('/generate', { method: 'POST', body: formData });
+    } else {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) { showError('المرجو إدخال نص'); return; }
+      response = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, num_questions: numQuestions, language, difficulty: currentDifficulty })
+      });
+    }
+    const data = await response.json();
+    if (data.error) { showError(data.error); return; }
+    questions = data.questions;
+    Object.keys(userAnswers).forEach(k => delete userAnswers[k]);
+    renderQuiz();
+    document.getElementById('progressContainer').classList.add('show');
+    document.getElementById('submitBtn').classList.add('show');
+    document.getElementById('submitBtn').disabled = false;
+  } catch (e) {
+    showError('وقع خطأ: ' + e.message);
+  } finally {
+    document.getElementById('loader').classList.remove('show');
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function renderQuiz() {
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.innerHTML = `
+      <div class="question-number">${i + 1}.</div>
+      <div class="question-content">
+        <div class="question-text">${q.question}</div>
+        <div class="buttons">
+          <button class="btn" data-q="${i}" data-val="true" onclick="selectAnswer(${i}, true)">✓ Vrai</button>
+          <button class="btn" data-q="${i}" data-val="false" onclick="selectAnswer(${i}, false)">✗ Faux</button>
+        </div>
+        <div class="explanation" id="exp-${i}"></div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function selectAnswer(qIndex, value) {
+  userAnswers[qIndex] = value;
+  document.querySelectorAll(`[data-q="${qIndex}"]`).forEach(b => b.classList.remove('selected'));
+  document.querySelector(`[data-q="${qIndex}"][data-val="${value}"]`).classList.add('selected');
+  const percent = (Object.keys(userAnswers).length / questions.length) * 100;
+  document.getElementById('progressBar').style.width = percent + '%';
+}
+
+function checkAnswers() {
+  let score = 0;
+  questions.forEach((q, i) => {
+    const userAns = userAnswers[i];
+    const btns = document.querySelectorAll(`[data-q="${i}"]`);
+    const exp = document.getElementById(`exp-${i}`);
+    btns.forEach(b => {
+      b.disabled = true;
+      b.classList.remove('selected');
+      const val = b.dataset.val === 'true';
+      if (val === q.answer) b.classList.add('correct');
+      else if (val === userAns && val !== q.answer) b.classList.add('wrong');
+    });
+    if (userAns === q.answer) score++;
+    const status = userAns === q.answer 
+      ? '<strong style="color:#10b981">✓ إجابة صحيحة</strong>' 
+      : userAns === undefined 
+        ? '<strong style="color:#f59e0b">⚠ لم تجب</strong>'
+        : '<strong style="color:#ef4444">✗ إجابة خاطئة</strong>';
+    exp.innerHTML = `${status}<br><strong>التعليل :</strong> ${q.explanation}`;
+    exp.classList.add('show');
+  });
+  document.getElementById('scoreText').textContent = `${score} / ${questions.length}`;
+  const percent = (score / questions.length) * 100;
+  let msg = percent === 100 ? '🎉 ممتاز!' : percent >= 70 ? '👏 جيد جداً' : percent >= 50 ? '👍 لا بأس' : '📚 تحتاج للمراجعة';
+  document.getElementById('scoreMessage').textContent = msg;
+  document.getElementById('scoreCard').classList.add('show');
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('scoreCard').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
